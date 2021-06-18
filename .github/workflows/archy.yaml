@@ -1,0 +1,45 @@
+name: Publish Flows
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    env:
+      location_dev: mypurecloud.com
+      location_prod: mypurecloud.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Inject dev options
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        uses: datamonsters/replace-action@v2
+        with:
+          files: options.yaml
+          replacements: "__CLIENT_ID__=${{ secrets.DEV_CLIENT_ID }},__CLIENT_SECRET__=${{ secrets.DEV_CLIENT_SECRET }},__ENVIRONMENT__=${{ env.location_dev }}"
+
+      - name: Inject prod options
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: datamonsters/replace-action@v2
+        with:
+          files: options.yaml
+          replacements: "__CLIENT_ID__=${{ secrets.PROD_CLIENT_ID }},__CLIENT_SECRET__=${{ secrets.PROD_CLIENT_SECRET }},__ENVIRONMENT__=${{ env.location_prod }}"
+
+      - name: Set up Archy
+        run: |
+          cd ~
+          mkdir archy
+          wget https://sdk-cdn.mypurecloud.com/archy/latest/archy-linux.zip
+          unzip archy-linux.zip -d archy
+          cd archy
+          ./archy version
+
+      - name: Publish flows
+        run: "for filename in flows/*; do ~/archy/archy publish --optionsFile options.yaml --file ${filename}; done"

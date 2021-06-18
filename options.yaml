@@ -1,0 +1,4 @@
+clientId: __CLIENT_ID__
+clientSecret: __CLIENT_SECRET__
+location: __ENVIRONMENT__
+forceUnlock: true
