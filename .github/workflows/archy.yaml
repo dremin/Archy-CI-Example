@@ -18,20 +18,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Inject dev options
-        if: ${{ github.ref == 'refs/heads/develop' }}
-        uses: datamonsters/replace-action@v2
-        with:
-          files: options.yaml
-          replacements: "__CLIENT_ID__=${{ secrets.DEV_CLIENT_ID }},__CLIENT_SECRET__=${{ secrets.DEV_CLIENT_SECRET }},__ENVIRONMENT__=${{ env.location_dev }}"
-
-      - name: Inject prod options
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: datamonsters/replace-action@v2
-        with:
-          files: options.yaml
-          replacements: "__CLIENT_ID__=${{ secrets.PROD_CLIENT_ID }},__CLIENT_SECRET__=${{ secrets.PROD_CLIENT_SECRET }},__ENVIRONMENT__=${{ env.location_prod }}"
-
       - name: Set up Archy
         run: |
           cd ~
@@ -41,5 +27,18 @@ jobs:
           cd archy
           ./archy version
 
-      - name: Publish flows
-        run: "for filename in flows/*; do ~/archy/archy publish --optionsFile options.yaml --file ${filename}; done"
+      - name: Publish flows (dev)
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        run: |
+          for filename in flows/*
+          do
+          ~/archy/archy publish --forceUnlock true --location ${{ env.location_dev }} --clientId ${{ secrets.DEV_CLIENT_ID }} --clientSecret ${{ secrets.DEV_CLIENT_SECRET }} --file ${filename}
+          done
+
+      - name: Publish flows (prod)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          for filename in flows/*
+          do
+          ~/archy/archy publish --forceUnlock true --location ${{ env.location_prod }} --clientId ${{ secrets.PROD_CLIENT_ID }} --clientSecret ${{ secrets.PROD_CLIENT_SECRET }} --file ${filename}
+          done
